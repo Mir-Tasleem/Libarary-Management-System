@@ -1,52 +1,59 @@
-// File: src/test/java/lms/service/LibraryServiceConcurrencyTest.java
 package lms.service;
 
-import lms.model.*;
-import org.junit.jupiter.api.*;
+import lms.exception.BookAlreadyIssuedException;
+import lms.model.Book;
+import lms.model.Student;
+import lms.model.User;
+import lms.util.DataRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-class LibraryServiceConcurrencyTest {
+public class LibraryServiceConcurrencyTest {
 
-    private LibraryService libraryService;
-    private Student student1;
-    private Student student2;
-    private Book book;
+    private LibraryService service;
 
     @BeforeEach
-    void setup() {
-        libraryService = new LibraryService();
+    public void setup() {
+        // In-memory mock repositories
+        InMemoryBookRepo bookRepo = new InMemoryBookRepo();
+        InMemoryUserRepo userRepo = new InMemoryUserRepo();
+        service = new LibraryService();
 
-        // Create students and book
-        student1 = new Student("S001", "Alice");
-        student2 = new Student("S002", "Bob");
-        book = new Book("B001", "Concurrency Book", "Goetz", "2006");
+        // Add book
+        Book book = new Book("B001", "Concurrent Programming", "Author A", "2022");
+        bookRepo.load().add(book);
 
-        // Manually add them to service
-        libraryService.getAllUsers().addAll(List.of(student1, student2));
-        libraryService.getAllBooks().add(book);
-        book.setIssuedTo(null);
-        book.setIssuedOn(null);
+        // Add users
+        Student s1 = new Student("S001", "Alice");
+        Student s2 = new Student("S002", "Bob");
+        userRepo.load().addAll(List.of(s1, s2));
     }
 
     @Test
-    void testConcurrentBorrowing() throws InterruptedException {
+    public void testConcurrentBorrowingSameBook() throws InterruptedException {
+        AtomicReference<String> result1 = new AtomicReference<>();
+        AtomicReference<String> result2 = new AtomicReference<>();
+
         Thread t1 = new Thread(() -> {
             try {
-                libraryService.borrowBook("S001", "B001");
-                System.out.println("Alice borrowed the book");
-            } catch (Exception e) {
-                System.out.println("Alice failed: " + e.getMessage());
+                service.borrowBook("S001", "B001");
+                result1.set("success");
+            } catch (BookAlreadyIssuedException e) {
+                result1.set("already issued");
             }
         });
 
         Thread t2 = new Thread(() -> {
             try {
-                libraryService.borrowBook("S002", "B001");
-                System.out.println("Bob borrowed the book");
-            } catch (Exception e) {
-                System.out.println("Bob failed: " + e.getMessage());
+                service.borrowBook("S002", "B001");
+                result2.set("success");
+            } catch (BookAlreadyIssuedException e) {
+                result2.set("already issued");
             }
         });
 
@@ -55,11 +62,23 @@ class LibraryServiceConcurrencyTest {
         t1.join();
         t2.join();
 
-        String issuedTo = book.getIssuedTo();
-        assertTrue(
-                Objects.equals(issuedTo, "S001") || Objects.equals(issuedTo, "S002"),
-                "Book must be issued to one user."
-        );
-        assertNotEquals("S001", "S002", "Book cannot be issued to both.");
+        List<String> results = List.of(result1.get(), result2.get());
+        assertTrue(results.contains("success"));
+        assertTrue(results.contains("already issued"));
+        assertNotEquals(result1.get(), result2.get());
+    }
+
+    // --- In-memory Repos ---
+
+    static class InMemoryBookRepo implements DataRepository<Book> {
+        private final List<Book> books = Collections.synchronizedList(new ArrayList<>());
+        public List<Book> load() { return books; }
+        public void save(List<Book> books) {}
+    }
+
+    static class InMemoryUserRepo implements DataRepository<User> {
+        private final List<User> users = Collections.synchronizedList(new ArrayList<>());
+        public List<User> load() { return users; }
+        public void save(List<User> users) {}
     }
 }

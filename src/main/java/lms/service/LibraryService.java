@@ -148,7 +148,6 @@ public class LibraryService {
     }
 
 
-
     // User and book lookup
     public User findUserById(String id) {
         return users.stream()

@@ -50,9 +50,18 @@ public class UserManager {
 
         while (!exit) {
             if (user instanceof Student) {
-                System.out.println("\nStudent Menu:\n1. List of Available Books\n2. Search by Title\n3. Borrow Book\n4. My Issued Books\n5. Return Book\n6.  Exit");
+                System.out.println("""
+                    Student Menu:
+                    1. List of Available Books
+                    2. Search by Title
+                    3. Borrow Book
+                    4. My Issued Books
+                    5. Return Book
+                    6. View eBooks
+                    7. Exit
+                    """);
                 switch (scanner.nextInt()) {
-                    case 1 -> libraryService.getAvailableBooks();
+                    case 1 -> libraryService.getAvailableBooks().forEach(System.out::println);
                     case 2 -> {
                         System.out.print("Enter keyword: ");
                         String keyword = scanner.next();
@@ -85,7 +94,22 @@ public class UserManager {
                         String id = scanner.next();
                         libraryService.returnBook(user.getUserId(), id);
                     }
-                    case 6 -> exit = true;
+                    case 6 -> {
+                        List<Book> ebooks = libraryService.getAllBooks().stream()
+                                .filter(b -> b instanceof EBook)
+                                .collect(Collectors.toList());
+
+                        if (ebooks.isEmpty()) {
+                            System.out.println("No eBooks available.");
+                        } else {
+                            System.out.println("Available eBooks:");
+                            ebooks.forEach(e -> {
+                                EBook eb = (EBook) e;
+                                System.out.println("- " + eb.getTitle() + " | Download: " + eb.getDownloadLink());
+                            });
+                        }
+                    }
+                    case 7 -> exit = true;
                     default -> System.out.println("Invalid choice");
                 }
             } else if (user instanceof Librarian) {
@@ -104,7 +128,7 @@ public class UserManager {
                     """);
 
                 switch (scanner.nextInt()) {
-                    case 1 -> libraryService.getAvailableBooks();
+                    case 1 -> libraryService.getAvailableBooks().forEach(System.out::println);
                     case 2 -> {
                         scanner.nextLine();
                         String id=IdGenerator.nextBookId();
@@ -114,9 +138,15 @@ public class UserManager {
                         String author = scanner.nextLine();
                         System.out.print("Enter Publishing Year: ");
                         String year = scanner.nextLine();
-                        System.out.print("Enter Quantity of book: ");
-                        Book newBook = new Book(id, title, author, year);
-                        libraryService.addBook(newBook);
+                        System.out.println("Is this an eBook? (Yes or No):");
+                        String isEBook = scanner.nextLine();
+                        if (isEBook.equalsIgnoreCase("yes")) {
+                            EBook ebook = new EBook(id, title, author, year);
+                            libraryService.addBook(ebook);
+                        } else {
+                            Book newBook = new Book(id, title, author, year);
+                            libraryService.addBook(newBook);
+                        }
                     }
                     case 3 -> {
                         scanner.nextLine();

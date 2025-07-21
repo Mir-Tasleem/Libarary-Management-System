@@ -23,6 +23,7 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
         while (true) {
+            System.out.println("\nWelcome to LMS");
             System.out.println("\nChoose an option:");
             System.out.println("1. Login");
             System.out.println("2. Create New Account");

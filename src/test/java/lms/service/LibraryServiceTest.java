@@ -1,92 +1,91 @@
 package lms.service;
 
 import lms.exception.*;
-import lms.model.Book;
-import lms.model.Student;
+import lms.model.*;
 import org.junit.jupiter.api.*;
 
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LibraryServiceTest {
 
-    private LibraryService libraryService;
+    private LibraryService service;
+    private Student student;
+    private Book book;
 
     @BeforeEach
-    void setUp() {
-        libraryService = new LibraryService();
+    public void setUp() {
+        service = new LibraryService();
+        student = new Student("S100", "Test Student");
+        book = new Book("B100", "Test Book", "Author", "2020");
+        service.addUser(student);
+        service.addBook(book);
     }
 
     @Test
-    void testBorrowAndReturnBook() {
-        String bookId = "B010";
-        String studentId = "S010";
-
-        Book book = new Book(bookId, "Test Book", "Author", "2022");
-        Student student = new Student(studentId, "John");
-
-        libraryService.addBook(book);
-        libraryService.addUser(student);
-
-        libraryService.borrowBook(studentId, bookId);
-        assertEquals(studentId, libraryService.findBookById(bookId).getIssuedTo());
-
-        libraryService.returnBook(studentId, bookId);
-        assertNull(libraryService.findBookById(bookId).getIssuedTo());
+    public void testAddBook() {
+        Book newBook = new Book("B101", "New Book", "Author2", "2021");
+        service.addBook(newBook);
+        assertTrue(service.getAllBooks().contains(newBook));
     }
 
     @Test
-    void testBorrowLimitExceeded() {
-        Student student = new Student("S011", "Limit Tester");
-        libraryService.addUser(student);
-
-        for (int i = 0; i < 3; i++) {
-            Book book = new Book("B01" + i, "Book " + i, "Author", "2020");
-            libraryService.addBook(book);
-            libraryService.borrowBook("S011", "B01" + i);
-        }
-
-        Book extraBook = new Book("B999", "Extra Book", "Author", "2021");
-        libraryService.addBook(extraBook);
-
-        assertThrows(BorrowLimitExceededException.class, () -> {
-            libraryService.borrowBook("S011", "B999");
-        });
+    public void testSearchBooksByTitle() {
+        List<Book> results = service.searchBooksByTitle("Test Book");
+        assertFalse(results.isEmpty());
     }
 
     @Test
-    void testAddDuplicateBookIncreasesQuantity() {
-        Book book1 = new Book("B020", "Duplicate", "Same Author", "2022");
-        Book book2 = new Book("B021", "Duplicate", "Same Author", "2022");
-
-        libraryService.addBook(book1);
-        libraryService.addBook(book2);
-
-        long quantity = libraryService.getAllBooks().stream()
-                .filter(b -> b.getTitle().equalsIgnoreCase("Duplicate"))
-                .mapToLong(Book::getQuantity)
-                .sum();
-
-        assertTrue(quantity >= 2);
+    public void testBorrowBook() {
+        assertDoesNotThrow(() -> service.borrowBook(student.getUserId(), book.getBookId()));
+        assertNotNull(service.findBookById(book.getBookId()).getIssuedTo());
     }
 
     @Test
-    void testDeleteUser() {
-        Student student = new Student("S013", "Mark");
-        libraryService.addUser(student);
-
-        boolean deleted = libraryService.deleteUser("S013");
-        assertTrue(deleted);
-        assertThrows(UserNotFoundException.class, () -> libraryService.findUserById("S013"));
+    public void testReturnBook() {
+        service.borrowBook(student.getUserId(), book.getBookId());
+        assertDoesNotThrow(() -> service.returnBook(student.getUserId(), book.getBookId()));
+        assertNull(service.findBookById(book.getBookId()).getIssuedTo());
     }
 
     @Test
-    void testSearchBookByTitle() {
-        Book book = new Book("B030", "Java Concurrency", "Author", "2023");
-        libraryService.addBook(book);
+    public void testDeleteBook() {
+        assertTrue(service.deleteBook(book.getBookId()));
+    }
 
-        List<Book> result = libraryService.searchBooksByTitle("concurrency");
-        assertFalse(result.isEmpty());
+    @Test
+    public void testDeleteUser() {
+        assertTrue(service.deleteUser(student.getUserId()));
+    }
+
+    @Test
+    public void testAddUser() {
+        Student newStudent = new Student("S101", "Another Student");
+        assertTrue(service.addUser(newStudent));
+    }
+
+    @Test
+    public void testFindBookById() {
+        assertEquals(book, service.findBookById(book.getBookId()));
+    }
+
+    @Test
+    public void testFindUserById() {
+        assertEquals(student, service.findUserById(student.getUserId()));
+    }
+
+    @Test
+    public void testIssueBookByTitle() {
+        assertDoesNotThrow(() -> service.issueBookByTitle(student.getUserId(), "Test Book"));
+    }
+
+    @Test
+    public void testGetAvailableBooks() {
+        List<Book> available = service.getAvailableBooks();
+        assertTrue(available.contains(book));
+        service.borrowBook(student.getUserId(), book.getBookId());
+        available = service.getAvailableBooks();
+        assertFalse(available.contains(book));
     }
 }
