@@ -40,7 +40,9 @@ public class LibraryService {
     public void printAvailableBookDetails() {
         List<Book> available;
         synchronized (books) {
-            available = getAvailableBooks();
+            available = getAvailableBooks().stream()
+                    .filter(b -> !(b instanceof EBook)) // exclude eBooks
+                    .collect(Collectors.toList());
         }
         for (Book book : available) {
             System.out.println("ID: " + book.getBookId());

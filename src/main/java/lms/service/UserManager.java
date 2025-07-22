@@ -65,6 +65,7 @@ public class UserManager {
                     6. View eBooks
                     7. Exit
                     """);
+                System.out.print("Enter Choice: ");
                 switch (scanner.nextInt()) {
                     case 1 -> libraryService.printAvailableBookDetails();
                     case 2 -> {
@@ -112,10 +113,14 @@ public class UserManager {
                             System.out.println("No eBooks available.");
                         } else {
                             System.out.println("Available eBooks:");
-                            ebooks.forEach(e -> {
-                                EBook eb = (EBook) e;
-                                System.out.println("- " + eb.getTitle() + " | Download: " + eb.getDownloadLink());
-                            });
+                            for (Book book : ebooks) {
+                                EBook ebook = (EBook) book;
+                                System.out.println("- Title: " + ebook.getTitle());
+                                System.out.println("  Author: " + ebook.getAuthor());
+                                System.out.println("  Year: " + ebook.getPublishYear());
+                                System.out.println("  Download: " + ebook.getDownloadLink());
+                                System.out.println("-----------------------------");
+                            }
                         }
                     }
                     case 7 -> exit = true;
@@ -135,7 +140,7 @@ public class UserManager {
                         9. Issue Book by Title to Student
                         10. Exit
                     """);
-
+                System.out.print("Enter Choice: ");
                 switch (scanner.nextInt()) {
                     case 1 -> libraryService.getAvailableBooks().forEach(System.out::println);
                     case 2 -> {
@@ -151,6 +156,7 @@ public class UserManager {
                         String isEBook = scanner.nextLine();
                         if (isEBook.equalsIgnoreCase("yes")) {
                             EBook ebook = new EBook(id, title, author, year);
+                            ebook.setDownloadLink(title);
                             libraryService.addBook(ebook);
                         } else {
                             Book newBook = new Book(id, title, author, year);

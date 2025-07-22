@@ -1,15 +1,15 @@
 package lms.util;
 
 import lms.model.Book;
+import lms.model.EBook;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
 public class BookRepository implements DataRepository<Book> {
     private static final String FILE = "books.csv";
-    private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy");
+    private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     @Override
     public List<Book> load() {
@@ -24,11 +24,12 @@ public class BookRepository implements DataRepository<Book> {
                 String publishDateStr = data[3];
                 String issuedTo = data[4];
                 String issuedOnStr = data[5];
+                String type = data.length >= 7 ? data[6] : "book";
 
-                Book book = new Book(id, title, author, publishDateStr);
-                if (!publishDateStr.isEmpty()) {
-                    book.setPublishYear(publishDateStr);
-                }
+                Book book = "ebook".equalsIgnoreCase(type)
+                        ? new EBook(id, title, author, publishDateStr)
+                        : new Book(id, title, author, publishDateStr);
+
                 if (!issuedTo.isEmpty()) {
                     book.setIssuedTo(issuedTo);
                 }
@@ -37,7 +38,6 @@ public class BookRepository implements DataRepository<Book> {
                 }
 
                 books.add(book);
-//                System.out.printf("%s add with Id: %s to the library\n",title,id);
             }
         } catch (Exception e) {
             System.out.println("Error loading books: " + e.getMessage());
@@ -48,11 +48,11 @@ public class BookRepository implements DataRepository<Book> {
     @Override
     public void save(List<Book> books) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE))) {
-            SimpleDateFormat issuedFormat = new SimpleDateFormat("yyyy-MM-dd");
             for (Book book : books) {
                 String issuedTo = book.getIssuedTo() != null ? book.getIssuedTo() : "";
-                String issuedOn = book.getIssuedOn() != null ? issuedFormat.format(book.getIssuedOn()) : "";
+                String issuedOn = book.getIssuedOn() != null ? FORMAT.format(book.getIssuedOn()) : "";
                 String publishDate = book.getPublishYear();
+                String type = book instanceof EBook ? "ebook" : "book";
 
                 writer.println(String.join(",",
                         book.getBookId(),
@@ -60,12 +60,12 @@ public class BookRepository implements DataRepository<Book> {
                         book.getAuthor(),
                         publishDate != null ? publishDate : "",
                         issuedTo,
-                        issuedOn
-                        ));
+                        issuedOn,
+                        type
+                ));
             }
         } catch (IOException e) {
             System.out.println("Error saving books: " + e.getMessage());
         }
     }
-
 }
