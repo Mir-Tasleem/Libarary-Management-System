@@ -3,6 +3,7 @@ package lms;
 import lms.model.User;
 import lms.service.LibraryService;
 import lms.service.UserManager;
+import lms.util.BookQuantityUpdater;
 
 import java.util.Scanner;
 import java.util.concurrent.Executors;
@@ -14,11 +15,15 @@ public class Main {
         LibraryService libraryService = new LibraryService();
         UserManager userManager = new UserManager(libraryService);
 
+        BookQuantityUpdater updater = new BookQuantityUpdater();
+        updater.startUpdating();
+
         // Start auto backup
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(() -> {
             libraryService.saveBooks();
             System.out.println("[Auto Backup] Books saved.");
+
         }, 0, 5, TimeUnit.MINUTES);
 
         Scanner scanner = new Scanner(System.in);
@@ -58,6 +63,8 @@ public class Main {
         }
 
         scheduler.shutdown();
+        updater.stopUpdating();
+
         libraryService.saveBooks();
         libraryService.saveUsers();
         System.out.println("System shutdown complete. Goodbye!");

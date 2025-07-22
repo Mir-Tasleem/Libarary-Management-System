@@ -37,7 +37,7 @@ public class BookRepository implements DataRepository<Book> {
                 }
 
                 books.add(book);
-                System.out.printf("%s add with Id: %s to the library",title,id);
+//                System.out.printf("%s add with Id: %s to the library\n",title,id);
             }
         } catch (Exception e) {
             System.out.println("Error loading books: " + e.getMessage());

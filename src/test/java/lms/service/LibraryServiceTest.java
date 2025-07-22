@@ -18,7 +18,6 @@ public class LibraryServiceTest {
 
     @BeforeEach
     public void setUp() {
-        // Clear CSV file data (optional but ensures fresh state)
         new BookRepository().save(new ArrayList<>());
         new UserRepository().save(new ArrayList<>());
 
@@ -50,6 +49,29 @@ public class LibraryServiceTest {
         assertDoesNotThrow(() -> service.borrowBook(student.getUserId(), book.getBookId()));
         assertNotNull(service.findBookById(book.getBookId()).getIssuedTo());
     }
+
+    @Test
+    void testBorrowLimitExceeded() {
+        Student student = new Student("S123", "Test Student");
+        service.addUser(student);
+
+
+        for (int i = 1; i <= 3; i++) {
+            Book book = new Book("B00" + i, "Book " + i, "Author", "2020");
+            service.addBook(book);
+            assertDoesNotThrow(() -> service.borrowBook("S123", book.getBookId()));
+        }
+
+
+        Book fourthBook = new Book("B004", "Book 4", "Author", "2020");
+        service.addBook(fourthBook);
+
+
+        assertThrows(BorrowLimitExceededException.class, () -> {
+            service.borrowBook("S123", "B004");
+        });
+    }
+
 
     @Test
     public void testReturnBook() {
