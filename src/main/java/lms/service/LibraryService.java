@@ -6,61 +6,43 @@ import lms.util.BookRepository;
 import lms.util.IdGenerator;
 import lms.util.UserRepository;
 
-import java.sql.SQLOutput;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class LibraryService {
-    private final List<Book> books;
-    private final List<User> users;
+    private final List<Book> books = Collections.synchronizedList(new ArrayList<>());
+    private final List<User> users = Collections.synchronizedList(new ArrayList<>());
     private final BookRepository bookRepo = new BookRepository();
     private final UserRepository userRepo = new UserRepository();
 
-
     public LibraryService() {
-        this.books = bookRepo.load();
-        this.users = userRepo.load();
+        books.addAll(bookRepo.load());
+        users.addAll(userRepo.load());
         IdGenerator.initialize(books, users);
     }
 
-    // Book operations
-    public  synchronized void addBook(Book newBook) {
-//        Optional<Book> existing = books.stream()
-//                .filter(b -> b.getTitle().equalsIgnoreCase(newBook.getTitle()))
-//                .filter(b -> b.getAuthor().equalsIgnoreCase(newBook.getAuthor()))
-//                .filter(b -> Objects.equals(b.getPublishYear(), newBook.getPublishYear()))
-//                .findFirst();
-//
-//
-//        if (existing.isPresent()) {
-////            existing.get().incrementQuantity(quantity);
-//            System.out.println("Book with title: " + newBook.getTitle()+ "already exists. Increased quantity by: "+quantity);
-//        } else {
-//            books.add(newBook);
-//            System.out.println("New book added: " + newBook);
-//        }
-//        saveBooks();
-        books.add(newBook);
-        System.out.println("Added new book with ID: " +newBook.getBookId());
-        saveBooks();
+    public void addBook(Book newBook) {
+        synchronized (books) {
+            books.add(newBook);
+            System.out.println("Added new book with ID: " + newBook.getBookId());
+            saveBooks();
+        }
     }
 
-
     public List<Book> getAvailableBooks() {
-        List<Book> availableBooks = books.stream()
-                .filter(Book::isAvailable)
-                .collect(Collectors.toList());
-
-        if (availableBooks.isEmpty()) {
-            System.out.println("No books are currently available.");
+        synchronized (books) {
+            return books.stream()
+                    .filter(Book::isAvailable)
+                    .collect(Collectors.toList());
         }
-
-        return availableBooks;
     }
 
     public void printAvailableBookDetails() {
-        List<Book> books=getAvailableBooks();
-        for (Book book : books) {
+        List<Book> available;
+        synchronized (books) {
+            available = getAvailableBooks();
+        }
+        for (Book book : available) {
             System.out.println("ID: " + book.getBookId());
             System.out.println("Title: " + book.getTitle());
             System.out.println("Author: " + book.getAuthor());
@@ -69,149 +51,167 @@ public class LibraryService {
         }
     }
 
-
-
-
     public List<Book> searchBooksByTitle(String keyword) {
-        return books.stream()
-                .filter(b -> b.getTitle().toLowerCase().contains(keyword.toLowerCase()))
-                .collect(Collectors.toList());
-    }
-
-    public synchronized void borrowBook(String userId, String bookId) {
-        User user = findUserById(userId);
-        Book book = findBookById(bookId);
-
-        if (!(user instanceof Student student)) {
-            throw new UnauthorizedActionException("Only students can borrow books.");
+        synchronized (books) {
+            return books.stream()
+                    .filter(b -> b.getTitle().toLowerCase().contains(keyword.toLowerCase()))
+                    .collect(Collectors.toList());
         }
+    }
 
-        if (!book.isAvailable()) {
-            throw new BookAlreadyIssuedException("Book is already borrowed.");
+    public void borrowBook(String userId, String bookId) {
+        synchronized (this) {
+            User user = findUserById(userId);
+            Book book = findBookById(bookId);
+
+            if (!(user instanceof Student student)) {
+                throw new UnauthorizedActionException("Only students can borrow books.");
+            }
+
+            if (!book.isAvailable()) {
+                throw new BookAlreadyIssuedException("Book is already borrowed.");
+            }
+
+            if (!student.canBorrowMore()) {
+                throw new BorrowLimitExceededException("Student has reached borrow limit.");
+            }
+
+            student.borrowBook(bookId);
+            book.setIssuedTo(userId);
+            book.setIssuedOn(new Date());
+            System.out.println("Book borrowed by user: " + userId);
+            saveBooks();
         }
-
-        if (!student.canBorrowMore()) {
-            throw new BorrowLimitExceededException("Student has reached borrow limit.");
-        }
-
-        student.borrowBook(bookId);
-        book.setIssuedTo(userId);
-        book.setIssuedOn(new Date());
-
-//        book.decrementQuantity();
-        System.out.println("Book: " + "Borrowed by user: "+userId);
-        saveBooks();
     }
 
+    public void returnBook(String userId, String bookId) {
+        synchronized (this) {
+            User user = findUserById(userId);
+            Book book = findBookById(bookId);
 
-    public synchronized void returnBook(String userId, String bookId) {
-        User user = findUserById(userId);
-        Book book = findBookById(bookId);
+            if (!userId.equals(book.getIssuedTo())) {
+                throw new RuntimeException("Book was not borrowed by this user");
+            }
 
-        if (!userId.equals(book.getIssuedTo()))
-            throw new RuntimeException("Book was not borrowed by this user");
+            if (user instanceof Student student) {
+                student.returnBook(bookId);
+            }
 
-        if (user instanceof Student student)
-            student.returnBook(bookId);
-
-//        book.incrementQuantity();
-        book.setIssuedTo(null);
-        book.setIssuedOn(null);
-        saveBooks();
-        System.out.println("Book with id: " +bookId+ " returned by user:" +userId);
-    }
-
-
-    public synchronized boolean deleteBook(String bookId) {
-        Book book = findBookById(bookId);
-        boolean removed = books.remove(book);
-        if (removed) saveBooks();
-        return removed;
-    }
-
-    public synchronized boolean deleteUser(String userId) {
-        User user = findUserById(userId);
-        boolean removed = users.remove(user);
-        if (removed) saveUsers();
-        return removed;
-    }
-
-    public synchronized boolean forceReturnBook(String bookId) {
-        Book book = findBookById(bookId);
-        if (book.getIssuedTo() != null) {
             book.setIssuedTo(null);
             book.setIssuedOn(null);
             saveBooks();
-//            book.incrementQuantity();
+            System.out.println("Book with ID: " + bookId + " returned by user: " + userId);
+        }
+    }
+
+    public boolean deleteBook(String bookId) {
+        synchronized (books) {
+            Book book = findBookById(bookId);
+            boolean removed = books.remove(book);
+            if (removed) saveBooks();
+            return removed;
+        }
+    }
+
+    public boolean deleteUser(String userId) {
+        synchronized (users) {
+            User user = findUserById(userId);
+            boolean removed = users.remove(user);
+            if (removed) saveUsers();
+            return removed;
+        }
+    }
+
+    public boolean forceReturnBook(String bookId) {
+        synchronized (books) {
+            Book book = findBookById(bookId);
+            if (book.getIssuedTo() != null) {
+                book.setIssuedTo(null);
+                book.setIssuedOn(null);
+                saveBooks();
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public boolean addUser(User user) {
+        synchronized (users) {
+            for (User existing : users) {
+                if (existing.getUserId().equalsIgnoreCase(user.getUserId())) {
+                    return false;
+                }
+            }
+            users.add(user);
+            saveUsers();
             return true;
         }
-        return false;
     }
 
-    public synchronized boolean addUser(User user) {
-        for (User existing : users) {
-            if (existing.getUserId().equalsIgnoreCase(user.getUserId())) {
-                return false; // duplicate
-            }
-        }
-        users.add(user);
-        saveUsers();
-        return true;
-    }
-
-
-    // User and book lookup
     public User findUserById(String id) {
-        return users.stream()
-                .filter(u -> u.getUserId().equals(id))
-                .findFirst()
-                .orElseThrow(() ->  new UserNotFoundException("User with ID " + id + " not found."));
+        synchronized (users) {
+            return users.stream()
+                    .filter(u -> u.getUserId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new UserNotFoundException("User with ID " + id + " not found."));
+        }
     }
 
     public Book findBookById(String id) {
-        return books.stream()
-                .filter(b -> b.getBookId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new BookNotFoundException("Book with ID " + id + " not found."));
+        synchronized (books) {
+            return books.stream()
+                    .filter(b -> b.getBookId().equals(id))
+                    .findFirst()
+                    .orElseThrow(() -> new BookNotFoundException("Book with ID " + id + " not found."));
+        }
     }
 
     public void issueBookByTitle(String userId, String titleKeyword) {
-        User user = findUserById(userId);
-        if (!(user instanceof Student)) {
-            System.out.println("Only students can borrow books.");
-            return;
-        }
+        synchronized (this) {
+            User user = findUserById(userId);
+            if (!(user instanceof Student)) {
+                System.out.println("Only students can borrow books.");
+                return;
+            }
 
-        Optional<Book> match = books.stream()
-                .filter(b -> b.getTitle().toLowerCase().contains(titleKeyword.toLowerCase()))
-                .filter(Book::isAvailable)
-                .findFirst();
+            Optional<Book> match;
+            synchronized (books) {
+                match = books.stream()
+                        .filter(b -> b.getTitle().toLowerCase().contains(titleKeyword.toLowerCase()))
+                        .filter(Book::isAvailable)
+                        .findFirst();
+            }
 
-        if (match.isPresent()) {
-            borrowBook(userId, match.get().getBookId());
-            System.out.println("Book: " + match.get().getTitle() + " issued to Student:" + userId);
-        } else {
-            throw new BookNotFoundException("Keyword does not match with any book title");
+            if (match.isPresent()) {
+                borrowBook(userId, match.get().getBookId());
+                System.out.println("Book: " + match.get().getTitle() + " issued to student: " + userId);
+            } else {
+                throw new BookNotFoundException("No available book matched the title keyword.");
+            }
         }
     }
 
-
-
-
-    // Save operations
     public void saveBooks() {
-        bookRepo.save(books);
+        synchronized (books) {
+            bookRepo.save(books);
+        }
     }
 
     public void saveUsers() {
-        userRepo.save(users);
+        synchronized (users) {
+            userRepo.save(users);
+        }
     }
 
     public List<Book> getAllBooks() {
-        return books;
+        synchronized (books) {
+            return new ArrayList<>(books); // return copy to avoid external modification
+        }
     }
 
     public List<User> getAllUsers() {
-        return users;
+        synchronized (users) {
+            return new ArrayList<>(users);
+        }
     }
 }

@@ -28,24 +28,25 @@ public class UserManager {
     }
     public User registerUser(String name, String role) {
         User newUser;
-        String newId;
         if (role.equalsIgnoreCase("Student")) {
-            newId = IdGenerator.nextStudentId();
-            newUser = new Student(newId, name);
-            System.out.println("New Student created with ID: "+newId);
+            newUser = new Student(IdGenerator.nextStudentId(), name);
+            System.out.println("New Student created with ID: " + newUser.getUserId());
         } else if (role.equalsIgnoreCase("Librarian")) {
-            newId = IdGenerator.nextLibrarianId();
-            newUser = new Librarian(newId, name);
-            System.out.println("New Student created with ID: "+newId);
+            newUser = new Librarian(IdGenerator.nextLibrarianId(), name);
+            System.out.println("New Librarian created with ID: " + newUser.getUserId());
         } else {
             System.out.println("Invalid role.");
             return null;
         }
 
-        libraryService.getAllUsers().add(newUser);
-        libraryService.saveUsers();
-        return newUser;
+        if (libraryService.addUser(newUser)) {
+            return newUser;
+        } else {
+            System.out.println("User already exists.");
+            return null;
+        }
     }
+
 
     public void handleUserActions(User user) {
         Scanner scanner = new Scanner(System.in);
