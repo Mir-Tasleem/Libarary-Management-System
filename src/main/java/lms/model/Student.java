@@ -2,6 +2,7 @@ package lms.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Student extends User {
     private static final int MAX_BORROW_LIMIT = 3;
@@ -34,5 +35,11 @@ public class Student extends User {
     @Override
     public String getRole() {
         return "Student";
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
     }
 }

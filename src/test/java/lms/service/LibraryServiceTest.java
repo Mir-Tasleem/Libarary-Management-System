@@ -2,6 +2,8 @@ package lms.service;
 
 import lms.exception.*;
 import lms.model.*;
+import lms.util.BookRepository;
+import lms.util.UserRepository;
 import org.junit.jupiter.api.*;
 
 import java.util.*;
@@ -16,12 +18,19 @@ public class LibraryServiceTest {
 
     @BeforeEach
     public void setUp() {
+        // Clear CSV file data (optional but ensures fresh state)
+        new BookRepository().save(new ArrayList<>());
+        new UserRepository().save(new ArrayList<>());
+
         service = new LibraryService();
+
         student = new Student("S100", "Test Student");
         book = new Book("B100", "Test Book", "Author", "2020");
+
         service.addUser(student);
         service.addBook(book);
     }
+
 
     @Test
     public void testAddBook() {

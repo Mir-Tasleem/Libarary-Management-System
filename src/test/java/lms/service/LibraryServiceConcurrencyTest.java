@@ -8,31 +8,29 @@ import lms.util.DataRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.crypto.spec.PSource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LibraryServiceConcurrencyTest {
-
+    @Test
+    public void sampleTest(){
+        System.out.println("concurrency test is running");
+    }
     private LibraryService service;
+
 
     @BeforeEach
     public void setup() {
-        // In-memory mock repositories
-        InMemoryBookRepo bookRepo = new InMemoryBookRepo();
-        InMemoryUserRepo userRepo = new InMemoryUserRepo();
         service = new LibraryService();
 
-        // Add book
-        Book book = new Book("B001", "Concurrent Programming", "Author A", "2022");
-        bookRepo.load().add(book);
-
-        // Add users
-        Student s1 = new Student("S001", "Alice");
-        Student s2 = new Student("S002", "Bob");
-        userRepo.load().addAll(List.of(s1, s2));
+        service.getAllBooks().add(new Book("B001", "Concurrent Programming", "Author A", "2022"));
+        service.getAllUsers().add(new Student("S001", "Alice"));
+        service.getAllUsers().add(new Student("S002", "Bob"));
     }
+
 
     @Test
     public void testConcurrentBorrowingSameBook() throws InterruptedException {
@@ -63,12 +61,14 @@ public class LibraryServiceConcurrencyTest {
         t2.join();
 
         List<String> results = List.of(result1.get(), result2.get());
+
+        // One should succeed, the other should fail
         assertTrue(results.contains("success"));
         assertTrue(results.contains("already issued"));
         assertNotEquals(result1.get(), result2.get());
     }
 
-    // --- In-memory Repos ---
+    // ---- In-memory Repos ----
 
     static class InMemoryBookRepo implements DataRepository<Book> {
         private final List<Book> books = Collections.synchronizedList(new ArrayList<>());
