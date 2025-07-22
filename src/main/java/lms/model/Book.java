@@ -16,11 +16,11 @@ public class Book {
     public Book() {}
 
     // Parameterized constructor
-    public Book(String bookId, String title, String author,String publisYear) {
+    public Book(String bookId, String title, String author,String publishYear) {
         this.bookId = bookId;
         this.author = author;
         this.title=title;
-        this.publishYear=publisYear;
+        this.publishYear=publishYear;
     }
 
     // Getters
@@ -53,9 +53,7 @@ public class Book {
 //    }
 
     // Setters
-    public void setBookId(String bookId) {
-        this.bookId = bookId;
-    }
+
 
     public void setAuthor(String author) {
         this.author = author;
@@ -96,13 +94,17 @@ public class Book {
 
     @Override
     public String toString() {
-        return "Book{" +
-                "Book Id:" + bookId + '\'' +
-                "title='" + title + '\'' +
-                ", author='" + author + '\'' +
-                ", publishYear=" + publishYear +
+        return "Book {" +
+                "Book ID: '" + bookId + '\'' +
+                ", Title: '" + title + '\'' +
+                ", Author: '" + author + '\'' +
+                ", Publish Year: '" + publishYear + '\'' +
+                ", Issued To: '" + (issuedTo != null ? issuedTo : "Not Issued") + '\'' +
+                ", Issued On: '" + (issuedOn != null ? issuedOn : "N/A") + '\'' +
+                ", Available: " + isAvailable() +
                 '}';
     }
+
 
     @Override
     public boolean equals(Object o) {

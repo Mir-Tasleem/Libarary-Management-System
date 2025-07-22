@@ -13,7 +13,7 @@ public class AdminReportGenerator {
         for (Book book : books) {
             System.out.println("\nBook: " + book.getBookId());
             for (Field field : Book.class.getDeclaredFields()) {
-                field.setAccessible(true); // allows access to private fields
+                field.setAccessible(true);
                 try {
                     Object value = field.get(book);
                     System.out.printf("  %-15s: %s%n", field.getName(), value);

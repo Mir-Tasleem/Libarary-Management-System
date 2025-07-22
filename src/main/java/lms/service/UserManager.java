@@ -1,5 +1,6 @@
 package lms.service;
 
+import lms.exception.UserNotFoundException;
 import lms.model.*;
 import lms.util.AdminReportGenerator;
 import lms.util.IdGenerator;
@@ -18,9 +19,9 @@ public class UserManager {
     public User login(String userId) {
         try {
             User user = libraryService.findUserById(userId);
-            System.out.println("Login successful as " + user.getRole());
+            System.out.println("User: "+userId+" logged successful as " + user.getRole());
             return user;
-        } catch (RuntimeException e) {
+        } catch (UserNotFoundException e) {
             System.out.println("User not found.");
             return null;
         }
@@ -31,9 +32,11 @@ public class UserManager {
         if (role.equalsIgnoreCase("Student")) {
             newId = IdGenerator.nextStudentId();
             newUser = new Student(newId, name);
+            System.out.println("New Student created with ID: "+newId);
         } else if (role.equalsIgnoreCase("Librarian")) {
             newId = IdGenerator.nextLibrarianId();
             newUser = new Librarian(newId, name);
+            System.out.println("New Student created with ID: "+newId);
         } else {
             System.out.println("Invalid role.");
             return null;
@@ -61,7 +64,7 @@ public class UserManager {
                     7. Exit
                     """);
                 switch (scanner.nextInt()) {
-                    case 1 -> libraryService.getAvailableBooks().forEach(System.out::println);
+                    case 1 -> libraryService.printAvailableBookDetails();
                     case 2 -> {
                         System.out.print("Enter keyword: ");
                         String keyword = scanner.next();

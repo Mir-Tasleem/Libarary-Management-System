@@ -58,6 +58,18 @@ public class LibraryService {
         return availableBooks;
     }
 
+    public void printAvailableBookDetails() {
+        List<Book> books=getAvailableBooks();
+        for (Book book : books) {
+            System.out.println("ID: " + book.getBookId());
+            System.out.println("Title: " + book.getTitle());
+            System.out.println("Author: " + book.getAuthor());
+            System.out.println("Published Year: " + book.getPublishYear());
+            System.out.println("------------");
+        }
+    }
+
+
 
 
     public List<Book> searchBooksByTitle(String keyword) {
@@ -177,9 +189,9 @@ public class LibraryService {
 
         if (match.isPresent()) {
             borrowBook(userId, match.get().getBookId());
-            System.out.println("Book: " + match.get().getTitle() + "issued to Student:" + userId);
+            System.out.println("Book: " + match.get().getTitle() + " issued to Student:" + userId);
         } else {
-            System.out.println("No available book found with that title.");
+            throw new BookNotFoundException("Keyword does not match with any book title");
         }
     }
 

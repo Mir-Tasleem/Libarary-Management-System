@@ -6,8 +6,6 @@ public class Librarian extends User {
         super(userId, name);
     }
 
-    // Librarians usually have admin privileges like adding/removing books
-
     @Override
     public String getRole() {
         return "Librarian";
