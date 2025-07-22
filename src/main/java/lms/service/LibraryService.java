@@ -60,9 +60,9 @@ public class LibraryService {
     }
 
     public void borrowBook(String userId, String bookId) {
-        synchronized (this) {
+        Book book = findBookById(bookId);
+        synchronized (book) {
             User user = findUserById(userId);
-            Book book = findBookById(bookId);
 
             if (!(user instanceof Student student)) {
                 throw new UnauthorizedActionException("Only students can borrow books.");
@@ -167,29 +167,31 @@ public class LibraryService {
     }
 
     public void issueBookByTitle(String userId, String titleKeyword) {
-        synchronized (this) {
+        try {
             User user = findUserById(userId);
             if (!(user instanceof Student)) {
                 System.out.println("Only students can borrow books.");
                 return;
             }
 
-            Optional<Book> match;
-            synchronized (books) {
-                match = books.stream()
-                        .filter(b -> b.getTitle().toLowerCase().contains(titleKeyword.toLowerCase()))
-                        .filter(Book::isAvailable)
-                        .findFirst();
-            }
+            Optional<Book> match = books.stream()
+                    .filter(b -> b.getTitle().toLowerCase().contains(titleKeyword.toLowerCase()))
+                    .filter(Book::isAvailable)
+                    .findFirst();
 
             if (match.isPresent()) {
                 borrowBook(userId, match.get().getBookId());
-                System.out.println("Book: " + match.get().getTitle() + " issued to student: " + userId);
+                System.out.println("Book: " + match.get().getTitle() + " issued to Student: " + userId);
             } else {
-                throw new BookNotFoundException("No available book matched the title keyword.");
+                System.out.println("No available book found with that title.");
             }
+        } catch (UserNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error issuing book: " + e.getMessage());
         }
     }
+
 
     public void saveBooks() {
         synchronized (books) {

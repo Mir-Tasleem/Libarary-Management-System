@@ -1,5 +1,6 @@
 package lms.service;
 
+import lms.exception.BookNotFoundException;
 import lms.exception.UserNotFoundException;
 import lms.model.*;
 import lms.util.AdminReportGenerator;
@@ -76,7 +77,7 @@ public class UserManager {
                         String id = scanner.next();
                         try {
                             libraryService.borrowBook(user.getUserId(), id);
-                        } catch (RuntimeException e) {
+                        } catch (BookNotFoundException e) {
                             System.out.println(e.getMessage());
                         }
 
@@ -90,13 +91,17 @@ public class UserManager {
                             System.out.println("No books currently issued to you.");
                         } else {
                             System.out.println("Books issued to you:");
-                            issuedBooks.forEach(b -> System.out.println("- " + b.getTitle()));
+                            issuedBooks.forEach(b -> System.out.println("- " +b.getBookId() + "-" + b.getTitle()));
                         }
                     }
                     case 5 -> {
                         System.out.print("Enter Book ID: ");
                         String id = scanner.next();
-                        libraryService.returnBook(user.getUserId(), id);
+                        try {
+                            libraryService.returnBook(user.getUserId(), id);
+                        }catch (BookNotFoundException e){
+                            System.out.println(e.getMessage());
+                        }
                     }
                     case 6 -> {
                         List<Book> ebooks = libraryService.getAllBooks().stream()
