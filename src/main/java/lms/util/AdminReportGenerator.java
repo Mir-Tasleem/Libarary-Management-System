@@ -12,15 +12,21 @@ public class AdminReportGenerator {
 
         for (Book book : books) {
             System.out.println("\nBook: " + book.getBookId());
-            for (Field field : Book.class.getDeclaredFields()) {
-                field.setAccessible(true);
-                try {
-                    Object value = field.get(book);
-                    String displayValue = value != null ? value.toString() : "N/A";
-                    System.out.printf("  %-15s: %s%n", field.getName(), displayValue);
-                } catch (IllegalAccessException e) {
-                    System.out.printf("  %-15s: [ACCESS DENIED]%n", field.getName());
+
+            Class<?> clazz = book.getClass();
+
+            while (clazz != null) {
+                for (Field field : clazz.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    try {
+                        Object value = field.get(book);
+                        String displayValue = value != null ? value.toString() : "N/A";
+                        System.out.printf("  %-15s: %s%n", field.getName(), displayValue);
+                    } catch (IllegalAccessException e) {
+                        System.out.printf("  %-15s: [ACCESS DENIED]%n", field.getName());
+                    }
                 }
+                clazz = clazz.getSuperclass();
             }
         }
 

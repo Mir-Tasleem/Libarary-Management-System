@@ -26,9 +26,14 @@ public class BookRepository implements DataRepository<Book> {
                 String issuedOnStr = data[5];
                 String type = data.length >= 7 ? data[6] : "book";
 
-                Book book = "ebook".equalsIgnoreCase(type)
-                        ? new EBook(id, title, author, publishDateStr)
-                        : new Book(id, title, author, publishDateStr);
+                Book book;
+                if ("ebook".equalsIgnoreCase(type)) {
+                    EBook ebook = new EBook(id, title, author, publishDateStr);
+                    ebook.setDownloadLink(title);
+                    book = ebook;
+                } else {
+                    book = new Book(id, title, author, publishDateStr);
+                }
 
                 if (!issuedTo.isEmpty()) {
                     book.setIssuedTo(issuedTo);
@@ -53,6 +58,7 @@ public class BookRepository implements DataRepository<Book> {
                 String issuedOn = book.getIssuedOn() != null ? FORMAT.format(book.getIssuedOn()) : "";
                 String publishDate = book.getPublishYear();
                 String type = book instanceof EBook ? "ebook" : "book";
+                String downloadLink = book instanceof EBook ? ((EBook) book).getDownloadLink() : "";
 
                 writer.println(String.join(",",
                         book.getBookId(),
@@ -61,7 +67,8 @@ public class BookRepository implements DataRepository<Book> {
                         publishDate != null ? publishDate : "",
                         issuedTo,
                         issuedOn,
-                        type
+                        type,
+                        downloadLink
                 ));
             }
         } catch (IOException e) {
