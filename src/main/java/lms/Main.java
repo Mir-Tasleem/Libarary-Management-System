@@ -5,6 +5,7 @@ import lms.service.LibraryService;
 import lms.service.UserManager;
 import lms.util.BookQuantityUpdater;
 
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,39 +29,42 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
         while (true) {
-            System.out.println("\nWelcome to LMS");
-            System.out.println("\nChoose an option:");
-            System.out.println("1. Login");
-            System.out.println("2. Create New Account");
-            System.out.println("3. Exit");
-            System.out.print("Enter choice: ");
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+            try {
+                System.out.println("1. Login\n2. Register\n3. Exit");
+                System.out.print("Enter your choice: ");
+                int choice = scanner.nextInt();
+                scanner.nextLine();  // Consume newline
 
-            if (choice == 1) {
-                System.out.print("Enter User ID to login: ");
-                String userId = scanner.nextLine();
-                User user = userManager.login(userId);
-                if (user != null) {
-                    userManager.handleUserActions(user);
-                }
-            } else if (choice == 2) {
-                System.out.print("Enter your name: ");
-                String name = scanner.nextLine();
-                System.out.print("Enter role (Student/Librarian): ");
-                String role = scanner.nextLine();
+                if (choice == 1) {
+                    System.out.print("Enter User ID to login: ");
+                    String userId = scanner.nextLine();
+                    User user = userManager.login(userId);
+                    if (user != null) {
+                        userManager.handleUserActions(user);
+                    }
+                } else if (choice == 2) {
+                    System.out.print("Enter your name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter role (Student/Librarian): ");
+                    String role = scanner.nextLine();
 
-                User newUser = userManager.registerUser(name, role);
-                if (newUser != null) {
-                    System.out.println("Account created. Logging in...");
-                    userManager.handleUserActions(newUser);
+                    User newUser = userManager.registerUser(name, role);
+                    if (newUser != null) {
+                        System.out.println("Account created. Logging in...");
+                        userManager.handleUserActions(newUser);
+                    }
+                } else if (choice == 3) {
+                    break;
+                } else {
+                    System.out.println("Invalid option.");
                 }
-            } else if (choice == 3) {
-                break;
-            } else {
-                System.out.println("Invalid option.");
+
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input. Please enter a number.");
+                scanner.nextLine();  // Clear the invalid input
             }
         }
+
 
         scheduler.shutdown();
         updater.stopUpdating();

@@ -16,7 +16,8 @@ public class AdminReportGenerator {
                 field.setAccessible(true);
                 try {
                     Object value = field.get(book);
-                    System.out.printf("  %-15s: %s%n", field.getName(), value);
+                    String displayValue = value != null ? value.toString() : "N/A";
+                    System.out.printf("  %-15s: %s%n", field.getName(), displayValue);
                 } catch (IllegalAccessException e) {
                     System.out.printf("  %-15s: [ACCESS DENIED]%n", field.getName());
                 }

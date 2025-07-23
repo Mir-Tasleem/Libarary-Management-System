@@ -44,12 +44,17 @@ public class LibraryService {
                     .filter(b -> !(b instanceof EBook)) // exclude eBooks
                     .collect(Collectors.toList());
         }
-        for (Book book : available) {
-            System.out.println("ID: " + book.getBookId());
-            System.out.println("Title: " + book.getTitle());
-            System.out.println("Author: " + book.getAuthor());
-            System.out.println("Published Year: " + book.getPublishYear());
-            System.out.println("------------");
+        if(!available.isEmpty()){
+            for (Book book : available) {
+                System.out.println("ID: " + book.getBookId());
+                System.out.println("Title: " + book.getTitle());
+                System.out.println("Author: " + book.getAuthor());
+                System.out.println("Published Year: " + book.getPublishYear());
+                System.out.println("------------");
+            }
+        }
+        else{
+            System.out.println("No Book Available\n");
         }
     }
 
@@ -209,7 +214,10 @@ public class LibraryService {
 
     public List<Book> getAllBooks() {
         synchronized (books) {
-            return new ArrayList<>(books); // return copy to avoid external modification
+            if(books.isEmpty()) {
+                System.out.println("No Books Found");
+            }
+            return new ArrayList<>(books);
         }
     }
 
