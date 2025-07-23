@@ -97,7 +97,7 @@ public class LibraryService {
             Book book = findBookById(bookId);
 
             if (!userId.equals(book.getIssuedTo())) {
-                throw new RuntimeException("Book was not borrowed by this user");
+                throw new BookNotFoundException("Book was not borrowed by this user");
             }
 
             if (user instanceof Student student) {
